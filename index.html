@@ -445,12 +445,13 @@
         <div class="card">
           <h3>Share / compare</h3>
           <div class="actions">
-            <button class="action-btn" id="copyResultBtn">Copy my result</button>
+            <button class="action-btn" id="copyResultBtn">Copy WhatsApp result</button>
+            <button class="action-btn secondary" id="copySyncBtn">Copy sync code</button>
             <button class="action-btn secondary" id="importBtn">Import partner result</button>
           </div>
           <div style="height:10px"></div>
-          <textarea id="importBox" placeholder="Paste the other person's result code or message here..."></textarea>
-          <p class="helper">Tip: after one of you plays, tap <strong>Copy my result</strong> and send it on WhatsApp. The other person can paste it here to sync the scoreboard on their phone.</p>
+          <textarea id="importBox" placeholder="Paste the sync code or full message here..."></textarea>
+          <p class="helper">Tip: use <strong>Copy WhatsApp result</strong> for the nice message. Only use <strong>Copy sync code</strong> if you want the other phone to import the result into its scoreboard.</p>
         </div>
 
         <div class="card">
@@ -503,6 +504,7 @@
     const attemptLabelEl = document.getElementById("attemptLabel");
     const messageEl = document.getElementById("message");
     const copyResultBtn = document.getElementById("copyResultBtn");
+    const copySyncBtn = document.getElementById("copySyncBtn");
     const importBtn = document.getElementById("importBtn");
     const importBox = document.getElementById("importBox");
     const resetPlayerBtn = document.getElementById("resetPlayerBtn");
@@ -949,17 +951,28 @@
       return JSON.parse(decodeURIComponent(escape(atob(directCode))));
     }
 
-    function buildShareText(player, includeSync = true) {
+    function buildShareText(player) {
       const state = getPlayerState(player);
       const score = state.won ? state.guesses.length : "X";
-      const lines = [
+      return [
         `${player} • Wordle Together #${dayNumber} ${score}/6`,
         ...state.guesses.map(emojiForGuess)
-      ];
-      if (includeSync) {
-        lines.push(`SYNC:${encodePayload(buildSharePayload(player))}`);
+      ].join("\n");
+    }
+
+    function buildSyncText(player) {
+      return `SYNC:${encodePayload(buildSharePayload(player))}`;
+    }
+
+    async function copyToClipboard(text, successMessage) {
+      try {
+        await navigator.clipboard.writeText(text);
+        setMessage(successMessage, "success");
+      } catch {
+        importBox.value = text;
+        importBox.select();
+        setMessage("Clipboard was blocked, so I put it in the box below for easy copy.", "info");
       }
-      return lines.join("\n");
     }
 
     async function copyResult() {
@@ -968,17 +981,19 @@
         setMessage("Finish the game first, then copy your result.", "error");
         return;
       }
-      const text = buildShareText(selectedPlayer, true);
+      const text = buildShareText(selectedPlayer);
       state.resultText = text;
       saveState();
-      try {
-        await navigator.clipboard.writeText(text);
-        setMessage("Result copied. Send it to the other person on WhatsApp.", "success");
-      } catch {
-        importBox.value = text;
-        importBox.select();
-        setMessage("Clipboard was blocked, so I put the result in the box below for easy copy.", "info");
+      await copyToClipboard(text, "Clean WhatsApp result copied.");
+    }
+
+    async function copySyncCode() {
+      const state = getPlayerState();
+      if (!state.completed) {
+        setMessage("Finish the game first, then copy the sync code.", "error");
+        return;
       }
+      await copyToClipboard(buildSyncText(selectedPlayer), "Sync code copied.");
     }
 
     function importResult() {
@@ -1054,6 +1069,7 @@
     });
 
     copyResultBtn.addEventListener("click", copyResult);
+    copySyncBtn.addEventListener("click", copySyncCode);
     importBtn.addEventListener("click", importResult);
     resetPlayerBtn.addEventListener("click", resetCurrentPlayer);
 

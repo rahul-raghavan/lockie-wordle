@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Wordle Game</title>
+<style>
+  body {font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px;}
+  input {font-size: 1.2em; padding: 5px; width: 300px; text-transform: uppercase;}
+  #guesses {margin-top: 20px; width: 320px;}
+  .guess {display: flex; justify-content: space-between; margin-bottom: 5px;}
+  .letter {width: 40px; height: 40px; line-height: 40px; text-align: center; font-weight: bold; font-size: 1.5em; border: 2px solid gray; margin-right: 4px;}
+  .correct {background-color: #6aaa64; color: white; border-color: #6aaa64;}
+  .present {background-color: #c9b458; color: white; border-color: #c9b458;}
+  .absent {background-color: #787c7e; color: white; border-color: #787c7e;}
+  #message {margin-top: 20px; font-size: 1.2em; font-weight: bold;}
+</style>
+</head>
+<body>
+<h1>Mini Wordle Game</h1>
+<p>Guess the 5-letter word. You have 6 tries!</p>
+<input type="text" id="guessInput" maxlength="5" autofocus autocomplete="off" placeholder="Enter your guess..." />
+<button id="submitGuess">Guess</button>
+<div id="guesses"></div>
+<div id="message"></div>
+
+<script>
+const words = ["PLANE", "CRANE", "BRAVE", "SHARE", "LIGHT", "WORLD", "GHOST", "STORM", "WATER", "TRAIN"];
+const target = words[Math.floor(Math.random() * words.length)];
+let guessesMade = 0;
+const maxGuesses = 6;
+
+const guessInput = document.getElementById('guessInput');
+const submitGuess = document.getElementById('submitGuess');
+const guessesDiv = document.getElementById('guesses');
+const messageDiv = document.getElementById('message');
+
+function checkGuess(guess) {
+  const guessUpper = guess.toUpperCase();
+  const result = [];
+  const targetArr = target.split('');
+  const guessArr = guessUpper.split('');
+
+  // Mark correct letters first
+  for (let i = 0; i < 5; i++) {
+    if (guessArr[i] === targetArr[i]) {
+      result[i] = 'correct';
+      targetArr[i] = null; // Remove matched letter
+    }
+  }
+  // Mark present and absent letters
+  for (let i = 0; i < 5; i++) {
+    if (!result[i]) {
+      const idx = targetArr.indexOf(guessArr[i]);
+      if (idx !== -1) {
+        result[i] = 'present';
+        targetArr[idx] = null;
+      } else {
+        result[i] = 'absent';
+      }
+    }
+  }
+  return result;
+}
+
+function addGuessToDom(guess, result) {
+  const guessDiv = document.createElement('div');
+  guessDiv.className = 'guess';
+  for (let i = 0; i < 5; i++) {
+    const letterSpan = document.createElement('span');
+    letterSpan.className = 'letter ' + result[i];
+    letterSpan.textContent = guess[i].toUpperCase();
+    guessDiv.appendChild(letterSpan);
+  }
+  guessesDiv.appendChild(guessDiv);
+}
+
+function endGame(won) {
+  guessInput.disabled = true;
+  submitGuess.disabled = true;
+  if (won) {
+    messageDiv.textContent = `Congratulations! You guessed the word: ${target}`;
+  } else {
+    messageDiv.textContent = `Game over! The word was: ${target}`;
+  }
+}
+
+submitGuess.addEventListener('click', () => {
+  const guess = guessInput.value.trim();
+  if (guess.length !== 5) {
+    alert('Please enter a 5-letter word.');
+    return;
+  }
+  guessesMade++;
+  const result = checkGuess(guess);
+  addGuessToDom(guess, result);
+  if (guess.toUpperCase() === target) {
+    endGame(true);
+  } else if (guessesMade >= maxGuesses) {
+    endGame(false);
+  }
+  guessInput.value = '';
+  guessInput.focus();
+});
+
+// Allow pressing Enter to submit guess
+guessInput.addEventListener('keyup', (e) => {
+  if (e.key === 'Enter') {
+    submitGuess.click();
+  }
+});
+</script>
+</body>
+</html>

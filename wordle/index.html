@@ -3,112 +3,239 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini Wordle Game</title>
+<title>Wordle Clone - Social Edition</title>
 <style>
-  body {font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px;}
-  input {font-size: 1.2em; padding: 5px; width: 300px; text-transform: uppercase;}
-  #guesses {margin-top: 20px; width: 320px;}
-  .guess {display: flex; justify-content: space-between; margin-bottom: 5px;}
-  .letter {width: 40px; height: 40px; line-height: 40px; text-align: center; font-weight: bold; font-size: 1.5em; border: 2px solid gray; margin-right: 4px;}
-  .correct {background-color: #6aaa64; color: white; border-color: #6aaa64;}
-  .present {background-color: #c9b458; color: white; border-color: #c9b458;}
-  .absent {background-color: #787c7e; color: white; border-color: #787c7e;}
-  #message {margin-top: 20px; font-size: 1.2em; font-weight: bold;}
+  body {
+    font-family: 'Arial', sans-serif;
+    background-color: #121213;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+    height: 100vh;
+  }
+  h1 {
+    font-weight: 700;
+    font-size: 3rem;
+    letter-spacing: 0.2em;
+    margin-bottom: 10px;
+  }
+  #game {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .row {
+    display: flex;
+    margin: 5px 0;
+  }
+  .tile {
+    border: 2px solid #3a3a3c;
+    width: 50px;
+    height: 50px;
+    margin: 3px;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  .tile.correct {
+    background-color: #538d4e;
+    border-color: #538d4e;
+    color: #fff;
+  }
+  .tile.present {
+    background-color: #b59f3b;
+    border-color: #b59f3b;
+    color: #fff;
+  }
+  .tile.absent {
+    background-color: #3a3a3c;
+    border-color: #3a3a3c;
+    color: #fff;
+  }
+  input {
+    margin-top: 20px;
+    text-transform: uppercase;
+    font-size: 1.5rem;
+    padding: 10px;
+    width: 260px;
+    border-radius: 5px;
+    border: none;
+    outline: none;
+    color: #121213;
+  }
+  button {
+    margin-top: 10px;
+    background-color: #538d4e;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:disabled {
+    background-color: #888;
+    cursor: not-allowed;
+  }
+  #message {
+    margin-top: 15px;
+    font-size: 1.2rem;
+    min-height: 24px;
+  }
+  #social-status {
+    margin-top: 25px;
+    font-size: 1rem;
+    color: #cccccc;
+    max-width: 300px;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
-<h1>Mini Wordle Game</h1>
-<p>Guess the 5-letter word. You have 6 tries!</p>
-<input type="text" id="guessInput" maxlength="5" autofocus autocomplete="off" placeholder="Enter your guess..." />
+<h1>WORDLE (v2)</h1>
+<div id="game"></div>
+<input type="text" id="guessInput" maxlength="5" placeholder="Enter guess..." autocomplete="off" autofocus />
 <button id="submitGuess">Guess</button>
-<div id="guesses"></div>
 <div id="message"></div>
+<div id="social-status"></div>
 
 <script>
-const words = ["PLANE", "CRANE", "BRAVE", "SHARE", "LIGHT", "WORLD", "GHOST", "STORM", "WATER", "TRAIN"];
-const target = words[Math.floor(Math.random() * words.length)];
-let guessesMade = 0;
-const maxGuesses = 6;
+// Word list - this can be expanded or linked to a word list API for real gameplay
+const words = ["about","other","which","their","there","these","would","could","write","right","plant","plane","crane","brave","share","light","world","ghost","storm","water","train"];
+const target = localStorage.getItem('wordleTarget') || words[Math.floor(Math.random() * words.length)];
+localStorage.setItem('wordleTarget', target);
 
+const maxGuesses = 6;
+let currentRow = 0;
+const guesses = [];
+const gameDiv = document.getElementById('game');
 const guessInput = document.getElementById('guessInput');
 const submitGuess = document.getElementById('submitGuess');
-const guessesDiv = document.getElementById('guesses');
 const messageDiv = document.getElementById('message');
+const socialStatusDiv = document.getElementById('social-status');
+
+// Assume players: Rahul and Ayesha
+// Store attempts using localStorage, keys storing who guessed
+const players = ['Rahul', 'Ayesha'];
+
+function initGrid() {
+  for(let i = 0; i < maxGuesses; i++) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    for(let j = 0; j < 5; j++) {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      row.appendChild(tile);
+    }
+    gameDiv.appendChild(row);
+  }
+}
 
 function checkGuess(guess) {
-  const guessUpper = guess.toUpperCase();
-  const result = [];
+  guess = guess.toLowerCase();
   const targetArr = target.split('');
-  const guessArr = guessUpper.split('');
+  const guessArr = guess.split('');
+  const result = new Array(5).fill('absent');
 
-  // Mark correct letters first
-  for (let i = 0; i < 5; i++) {
-    if (guessArr[i] === targetArr[i]) {
+  // First pass - correct letters
+  for(let i=0; i<5; i++) {
+    if(guessArr[i] === targetArr[i]) {
       result[i] = 'correct';
-      targetArr[i] = null; // Remove matched letter
+      targetArr[i] = null;
     }
   }
-  // Mark present and absent letters
-  for (let i = 0; i < 5; i++) {
-    if (!result[i]) {
-      const idx = targetArr.indexOf(guessArr[i]);
-      if (idx !== -1) {
-        result[i] = 'present';
-        targetArr[idx] = null;
-      } else {
-        result[i] = 'absent';
-      }
+  // Second pass - present letters
+  for(let i=0; i<5; i++) {
+    if(result[i] === 'absent' && targetArr.includes(guessArr[i])) {
+      result[i] = 'present';
+      targetArr[targetArr.indexOf(guessArr[i])] = null;
     }
   }
   return result;
 }
 
-function addGuessToDom(guess, result) {
-  const guessDiv = document.createElement('div');
-  guessDiv.className = 'guess';
-  for (let i = 0; i < 5; i++) {
-    const letterSpan = document.createElement('span');
-    letterSpan.className = 'letter ' + result[i];
-    letterSpan.textContent = guess[i].toUpperCase();
-    guessDiv.appendChild(letterSpan);
+function setRow(rowNum, guess, result) {
+  const row = gameDiv.children[rowNum];
+  for(let i=0; i<5; i++) {
+    const tile = row.children[i];
+    tile.textContent = guess[i].toUpperCase();
+    tile.className = 'tile ' + result[i];
   }
-  guessesDiv.appendChild(guessDiv);
 }
 
-function endGame(won) {
+function endGame(win) {
   guessInput.disabled = true;
   submitGuess.disabled = true;
-  if (won) {
-    messageDiv.textContent = `Congratulations! You guessed the word: ${target}`;
+  if(win) {
+    messageDiv.textContent = `Congratulations! You guessed the word: ${target.toUpperCase()}`;
   } else {
-    messageDiv.textContent = `Game over! The word was: ${target}`;
+    messageDiv.textContent = `Game over! The word was: ${target.toUpperCase()}`;
   }
+}
+
+function updateSocialStatus() {
+  const status = players.map(player => {
+    const key = 'wordleAttempt_' + player.toLowerCase();
+    const attempt = localStorage.getItem(key);
+    if(attempt) {
+      return `${player} has already attempted.`;
+    } else {
+      return `${player} has not attempted yet.`;
+    }
+  }).join(' ');
+  socialStatusDiv.textContent = status;
 }
 
 submitGuess.addEventListener('click', () => {
-  const guess = guessInput.value.trim();
-  if (guess.length !== 5) {
-    alert('Please enter a 5-letter word.');
+  const guess = guessInput.value.trim().toLowerCase();
+  if(guess.length !== 5) {
+    alert('Please enter exactly 5 letters.');
     return;
   }
-  guessesMade++;
+  if(!words.includes(guess)) {
+    alert('Not a valid word.');
+    return;
+  }
+  if(currentRow >= maxGuesses) return;
+
   const result = checkGuess(guess);
-  addGuessToDom(guess, result);
-  if (guess.toUpperCase() === target) {
+  setRow(currentRow, guess, result);
+  guesses.push(guess);
+  currentRow++;
+
+  // Record attempt for current player (rotate)
+  const currentPlayer = players[currentRow % players.length];
+  localStorage.setItem('wordleAttempt_' + currentPlayer.toLowerCase(), guess);
+
+  if(guess === target) {
     endGame(true);
-  } else if (guessesMade >= maxGuesses) {
+  } else if(currentRow >= maxGuesses) {
     endGame(false);
   }
   guessInput.value = '';
   guessInput.focus();
+
+  updateSocialStatus();
 });
 
-// Allow pressing Enter to submit guess
 guessInput.addEventListener('keyup', (e) => {
-  if (e.key === 'Enter') {
+  if(e.key === 'Enter') {
     submitGuess.click();
   }
 });
+
+// Initialize
+initGrid();
+updateSocialStatus();
 </script>
 </body>
 </html>

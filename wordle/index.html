@@ -386,6 +386,7 @@
     </div>
   </div>
 
+  <script src="word-list.js"></script>
   <script>
     const PLAYERS = ["Rahul", "Ayesha"];
     const ANSWERS = [
@@ -401,57 +402,7 @@
       "round","audit","lying","gamma","labor","islet","civic","forge","corny","moult"
     ];
 
-    const EXTRA_GUESSES = [
-      "about","above","abuse","actor","acute","admit","adopt","adult","after","again",
-      "agent","agile","aging","aisle","alarm","album","alert","alike","alive","allow",
-      "alone","along","alter","amber","amend","angel","anger","angle","angry","ankle",
-      "apple","apply","arena","argue","arise","array","aside","asset","audio","avoid",
-      "award","aware","badly","baker","bases","basic","beach","began","begin","begun",
-      "being","below","birth","black","blame","blind","block","blood","board","boost",
-      "booth","bound","brain","brand","brave","bread","break","brick","brief","bring",
-      "broad","broke","brown","build","built","buyer","cable","carry","catch","cause",
-      "chain","chair","chaos","charm","chart","chase","cheap","check","chest","chief",
-      "child","china","chose","civil","claim","class","clean","clear","clerk","click",
-      "clock","close","coach","coast","could","count","court","cover","craft","crane",
-      "crash","cream","crime","cross","crowd","crown","curve","cycle","daily","dance",
-      "dated","dealt","death","debut","delay","depth","doing","doubt","dozen","draft",
-      "drama","dream","dress","drink","drive","drove","dying","eager","early","earth",
-      "eight","elite","empty","enemy","enjoy","enter","entry","equal","error","event",
-      "every","exact","exist","extra","faith","false","fault","fiber","field","fifth",
-      "fifty","fight","final","first","fixed","flash","fleet","floor","focus","force",
-      "forth","forty","forum","found","frame","frank","fraud","fresh","front","fruit",
-      "fully","funny","giant","given","glass","globe","going","grace","grade","grand",
-      "grant","grass","great","green","gross","group","grown","guard","guess","guest",
-      "guide","happy","harsh","heart","heavy","hence","honor","horse","hotel","house",
-      "human","ideal","image","index","inner","input","issue","japan","joint","judge",
-      "known","label","large","laser","later","laugh","layer","learn","least","leave",
-      "legal","level","light","limit","local","logic","loose","lower","lucky","lunch",
-      "major","maker","march","match","maybe","mayor","metal","might","minor","model",
-      "money","month","moral","motor","mount","mouse","mouth","movie","music","needs",
-      "never","newly","night","noise","north","novel","nurse","occur","ocean","offer",
-      "often","order","other","ought","paint","panel","paper","party","peace","phase",
-      "phone","piano","piece","pilot","pitch","place","plain","plane","plant","plate",
-      "point","pound","power","press","price","pride","prime","print","prior","prize",
-      "proof","proud","queen","quick","quiet","quite","radio","raise","range","rapid",
-      "ratio","reach","react","ready","refer","right","rival","river","robot","rough",
-      "round","route","royal","rural","scale","scene","scope","score","sense","serve",
-      "seven","shall","shape","share","sharp","sheet","shelf","shell","shift","shine",
-      "shirt","shock","shoot","short","shown","sight","since","skill","sleep","slide",
-      "small","smart","smile","smoke","solid","solve","sorry","sound","south","space",
-      "spare","speak","speed","spend","spoke","sport","staff","stage","stake","stand",
-      "start","state","steam","steel","stick","still","stock","stone","store","storm",
-      "story","strip","stuck","study","stuff","style","sugar","suite","super","sweet",
-      "table","taken","taste","teach","teeth","terry","thank","their","theme","there",
-      "these","thick","thing","think","third","those","three","throw","tight","times",
-      "tired","title","today","topic","total","touch","tough","tower","track","trade",
-      "train","treat","trend","trial","trust","truth","twice","under","union","unity",
-      "until","upper","upset","urban","usage","usual","vague","valid","value","video",
-      "visit","vital","voice","waste","watch","water","wheel","where","which","while",
-      "white","whole","whose","woman","women","world","worry","worth","would","write",
-      "wrong","young","youth"
-    ];
-
-    const VALID_GUESSES = Array.from(new Set([...ANSWERS, ...EXTRA_GUESSES]));
+    const VALID_GUESSES = Array.isArray(window.WORDLE_WORDS) && window.WORDLE_WORDS.length ? window.WORDLE_WORDS : ANSWERS;
     const MAX_GUESSES = 6;
     const WORD_LENGTH = 5;
     const STORAGE_KEY = "wordleTogetherV3";

@@ -22,6 +22,10 @@
       --accent: #538d4e;
       --danger: #b91c1c;
       --shadow: 0 10px 30px rgba(0,0,0,.28);
+      --tile-size: 62px;
+      --tile-gap: 6px;
+      --key-height: 58px;
+      --key-min-width: 42px;
     }
 
     * { box-sizing: border-box; }
@@ -45,6 +49,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      flex-wrap: wrap;
       border-bottom: 1px solid #2a2a2c;
       padding-bottom: 14px;
       margin-bottom: 18px;
@@ -108,7 +113,10 @@
       border-radius: 12px;
       font-weight: 700;
       cursor: pointer;
+      transition: transform .12s ease, background-color .12s ease, color .12s ease;
     }
+
+    .player-btn:active { transform: scale(.98); }
 
     .player-btn.active {
       background: #fff;
@@ -134,22 +142,18 @@
 
     .board {
       display: grid;
-      gap: 6px;
+      gap: var(--tile-gap);
     }
 
     .board-row {
       display: grid;
-      grid-template-columns: repeat(5, minmax(52px, 62px));
-      gap: 6px;
+      grid-template-columns: repeat(5, var(--tile-size));
+      gap: var(--tile-gap);
     }
 
     .tile {
-      width: min(12vw, 62px);
-      height: min(12vw, 62px);
-      max-width: 62px;
-      max-height: 62px;
-      min-width: 52px;
-      min-height: 52px;
+      width: var(--tile-size);
+      height: var(--tile-size);
       border: 2px solid var(--border);
       display: flex;
       align-items: center;
@@ -160,6 +164,8 @@
       user-select: none;
       background: var(--tile-empty);
       transition: transform .12s ease, border-color .12s ease, background-color .12s ease;
+      backface-visibility: hidden;
+      transform-style: preserve-3d;
     }
 
     .tile.filled { border-color: var(--border-active); }
@@ -167,12 +173,19 @@
     .tile.present { background: var(--present); border-color: var(--present); }
     .tile.absent { background: var(--absent); border-color: var(--absent); }
     .tile.pop { transform: scale(1.06); }
+    .tile.reveal { animation: flip .55s ease both; animation-delay: var(--delay, 0ms); }
+    .tile.bounce { animation: bounce .18s ease; }
+
+    .board-row.shake { animation: shake .28s ease-in-out; }
 
     .message {
       min-height: 24px;
       text-align: center;
       font-weight: 700;
       margin-bottom: 16px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.04);
     }
 
     .message.error { color: #fda4af; }
@@ -197,13 +210,16 @@
       background: var(--key);
       color: var(--key-text);
       font-weight: 700;
-      min-width: 42px;
-      height: 58px;
+      min-width: var(--key-min-width);
+      height: var(--key-height);
       padding: 0 10px;
       cursor: pointer;
       text-transform: uppercase;
       font-size: 0.95rem;
+      transition: transform .08s ease, filter .12s ease, background-color .12s ease;
     }
+
+    .key:active { transform: translateY(1px) scale(.98); }
 
     .key.wide { min-width: 64px; font-size: 0.78rem; }
     .key.correct { background: var(--correct); }
@@ -235,6 +251,22 @@
       border: 1px solid rgba(255,255,255,.06);
       border-radius: 12px;
       background: rgba(255,255,255,.03);
+    }
+
+    .score-row.leading {
+      border-color: rgba(106,170,100,.55);
+      background: rgba(106,170,100,.10);
+    }
+
+    .winner-banner {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.06);
+      color: var(--muted);
+      font-size: .92rem;
+      line-height: 1.4;
     }
 
     .score-row strong { display: block; margin-bottom: 3px; }
@@ -272,7 +304,10 @@
       background: #e5e7eb;
       color: #111827;
       flex: 1 1 140px;
+      transition: transform .08s ease, filter .12s ease;
     }
+
+    .action-btn:active { transform: scale(.98); }
 
     .action-btn.secondary { background: #27272a; color: #fff; border: 1px solid rgba(255,255,255,.08); }
     .action-btn.danger { background: #3f1010; color: #fecaca; border: 1px solid rgba(248,113,113,.25); }
@@ -301,24 +336,66 @@
       line-height: 1.45;
     }
 
+    @keyframes flip {
+      0% { transform: rotateX(0deg); }
+      45% { transform: rotateX(90deg); }
+      100% { transform: rotateX(0deg); }
+    }
+
+    @keyframes bounce {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
     @media (max-width: 920px) {
       .layout { grid-template-columns: 1fr; }
       .side-panel { order: 2; }
       .game-panel { order: 1; }
     }
 
-    @media (max-width: 540px) {
-      .app { padding-inline: 10px; }
-      .game-panel, .side-panel { padding: 14px; border-radius: 16px; }
-      .tile {
-        min-width: 44px;
-        min-height: 44px;
-        width: min(15vw, 54px);
-        height: min(15vw, 54px);
-        font-size: 1.45rem;
+    @media (max-width: 640px) {
+      .app { padding: 12px 10px 28px; }
+      .topbar { align-items: flex-start; }
+      .pill { width: 100%; text-align: center; }
+      .subline { font-size: .88rem; gap: 6px; margin-bottom: 14px; }
+      :root {
+        --tile-size: min(calc((100vw - 56px) / 5), 54px);
+        --tile-gap: 5px;
+        --key-height: 48px;
+        --key-min-width: 30px;
       }
-      .key { min-width: 30px; height: 50px; padding: 0 8px; font-size: .82rem; }
-      .key.wide { min-width: 54px; }
+      .game-panel, .side-panel { padding: 14px; border-radius: 16px; }
+      .keyboard { gap: 6px; }
+      .key-row { gap: 4px; }
+      .key { padding: 0 6px; font-size: .78rem; }
+      .key.wide { min-width: 48px; font-size: .7rem; }
+      .score-row { padding: 10px; }
+    }
+
+    @media (max-width: 420px) {
+      h1 { font-size: 1.7rem; letter-spacing: .14em; }
+      .badge, .pill { font-size: .74rem; padding: 5px 8px; }
+      .player-switcher { gap: 8px; }
+      .player-btn { padding: 9px 12px; }
+      .subline { display: grid; grid-template-columns: 1fr; gap: 2px; }
+      .subline span:nth-child(even) { display: none; }
+      .stats-grid { grid-template-columns: 1fr; }
+      :root {
+        --tile-size: min(calc((100vw - 44px) / 5), 50px);
+        --tile-gap: 4px;
+        --key-height: 44px;
+        --key-min-width: 28px;
+      }
+      .tile { font-size: 1.25rem; }
+      .message { font-size: .92rem; }
+      .helper, .footer-note { font-size: .82rem; }
     }
   </style>
 </head>
@@ -327,7 +404,7 @@
     <div class="topbar">
       <div class="brand">
         <h1>WORDLE</h1>
-        <span class="badge">v3</span>
+        <span class="badge">v4</span>
         <span class="badge" id="puzzleBadge">Daily puzzle</span>
       </div>
       <div class="pill">Classic-style daily game for Rahul + Ayesha</div>
@@ -357,6 +434,7 @@
         <div class="card">
           <h2>Today's scoreboard</h2>
           <div class="score-list" id="scoreList"></div>
+          <div class="winner-banner" id="winnerBanner"></div>
         </div>
 
         <div class="card">
@@ -417,6 +495,7 @@
     const boardEl = document.getElementById("board");
     const keyboardEl = document.getElementById("keyboard");
     const scoreListEl = document.getElementById("scoreList");
+    const winnerBannerEl = document.getElementById("winnerBanner");
     const statsGridEl = document.getElementById("statsGrid");
     const playerSwitcherEl = document.getElementById("playerSwitcher");
     const currentPlayerLabelEl = document.getElementById("currentPlayerLabel");
@@ -440,6 +519,7 @@
 
     let selectedPlayer = PLAYERS[0];
     let currentGuess = "";
+    let revealRow = null;
 
     function freshPlayerDayState() {
       return {
@@ -593,6 +673,10 @@
           const tile = boardEl.children[rowIndex].children[colIndex];
           tile.textContent = letter.toUpperCase();
           tile.className = `tile filled ${statuses[colIndex]}`;
+          if (revealRow === rowIndex) {
+            tile.classList.add("reveal");
+            tile.style.setProperty("--delay", `${colIndex * 110}ms`);
+          }
         });
       });
 
@@ -603,6 +687,10 @@
           tile.textContent = letter;
           tile.className = "tile filled pop";
         });
+      }
+
+      if (revealRow !== null) {
+        setTimeout(() => { revealRow = null; }, 650);
       }
     }
 
@@ -649,7 +737,7 @@
       PLAYERS.forEach((player) => {
         const state = getPlayerState(player);
         const row = document.createElement("div");
-        row.className = "score-row";
+        row.className = `score-row${winner === player || (winner === "tie" && state.completed && state.won) ? " leading" : ""}`;
         const label = state.imported ? "Imported" : wasRecordedToday(player) ? "On this device" : "Waiting";
         const trophy = winner === player ? "👑" : winner === "tie" && state.completed && state.won ? "🤝" : "";
         row.innerHTML = `
@@ -661,6 +749,19 @@
         `;
         scoreListEl.appendChild(row);
       });
+    }
+
+    function renderWinnerBanner() {
+      const winner = computeWinner();
+      if (winner === "tie") {
+        winnerBannerEl.textContent = "It's a tie so far — both solved it in the same number of guesses.";
+      } else if (winner) {
+        winnerBannerEl.textContent = `${winner} is leading today. The other player can still tie or beat it.`;
+      } else if (PLAYERS.every((player) => !wasRecordedToday(player))) {
+        winnerBannerEl.textContent = "Nobody has played yet. First one in sets the bar.";
+      } else {
+        winnerBannerEl.textContent = "Only one result is in so far — import or finish the other board to compare properly.";
+      }
     }
 
     function averageAttempts(stats) {
@@ -703,6 +804,7 @@
       renderBoard();
       renderKeyboard();
       renderScoreboard();
+      renderWinnerBanner();
       renderStats();
 
       const playerState = getPlayerState();
@@ -752,15 +854,18 @@
       }
       if (currentGuess.length !== WORD_LENGTH) {
         setMessage("Need 5 letters.", "error");
+        shakeActiveRow();
         return;
       }
       const guess = currentGuess.toLowerCase();
       if (!VALID_GUESSES.includes(guess)) {
         setMessage("Not in word list.", "error");
+        shakeActiveRow();
         return;
       }
 
       playerState.guesses.push(guess);
+      revealRow = playerState.guesses.length - 1;
       playerState.updatedAt = new Date().toISOString();
       currentGuess = "";
 
@@ -778,6 +883,16 @@
 
       saveState();
       render();
+    }
+
+    function shakeActiveRow() {
+      const playerState = getPlayerState();
+      const row = boardEl.children[playerState.guesses.length];
+      if (!row) return;
+      row.classList.remove("shake");
+      void row.offsetWidth;
+      row.classList.add("shake");
+      setTimeout(() => row.classList.remove("shake"), 320);
     }
 
     function handleKey(key) {
@@ -812,7 +927,7 @@
     function buildSharePayload(player) {
       const state = getPlayerState(player);
       return {
-        version: 3,
+        version: 4,
         dayKey,
         puzzle: dayNumber,
         player,
@@ -820,7 +935,7 @@
         completed: state.completed,
         won: state.won,
         updatedAt: state.updatedAt,
-        source: "Wordle Together"
+        source: "Wordle Together v4"
       };
     }
 

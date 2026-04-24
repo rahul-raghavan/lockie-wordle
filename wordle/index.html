@@ -1,241 +1,997 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wordle Clone - Social Edition</title>
-<style>
-  body {
-    font-family: 'Arial', sans-serif;
-    background-color: #121213;
-    color: #ffffff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 0;
-    padding: 20px;
-    height: 100vh;
-  }
-  h1 {
-    font-weight: 700;
-    font-size: 3rem;
-    letter-spacing: 0.2em;
-    margin-bottom: 10px;
-  }
-  #game {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .row {
-    display: flex;
-    margin: 5px 0;
-  }
-  .tile {
-    border: 2px solid #3a3a3c;
-    width: 50px;
-    height: 50px;
-    margin: 3px;
-    text-transform: uppercase;
-    font-weight: 700;
-    font-size: 2rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    user-select: none;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-  }
-  .tile.correct {
-    background-color: #538d4e;
-    border-color: #538d4e;
-    color: #fff;
-  }
-  .tile.present {
-    background-color: #b59f3b;
-    border-color: #b59f3b;
-    color: #fff;
-  }
-  .tile.absent {
-    background-color: #3a3a3c;
-    border-color: #3a3a3c;
-    color: #fff;
-  }
-  input {
-    margin-top: 20px;
-    text-transform: uppercase;
-    font-size: 1.5rem;
-    padding: 10px;
-    width: 260px;
-    border-radius: 5px;
-    border: none;
-    outline: none;
-    color: #121213;
-  }
-  button {
-    margin-top: 10px;
-    background-color: #538d4e;
-    color: #fff;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  button:disabled {
-    background-color: #888;
-    cursor: not-allowed;
-  }
-  #message {
-    margin-top: 15px;
-    font-size: 1.2rem;
-    min-height: 24px;
-  }
-  #social-status {
-    margin-top: 25px;
-    font-size: 1rem;
-    color: #cccccc;
-    max-width: 300px;
-    text-align: center;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wordle Together</title>
+  <style>
+    :root {
+      --bg: #121213;
+      --panel: #18181b;
+      --text: #ffffff;
+      --muted: #a1a1aa;
+      --border: #3a3a3c;
+      --border-active: #565758;
+      --tile-empty: #121213;
+      --tile-filled: #121213;
+      --correct: #6aaa64;
+      --present: #c9b458;
+      --absent: #3a3a3c;
+      --key: #818384;
+      --key-text: #ffffff;
+      --accent: #538d4e;
+      --danger: #b91c1c;
+      --shadow: 0 10px 30px rgba(0,0,0,.28);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #1d1d20 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      min-height: 100vh;
+    }
+
+    .app {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #2a2a2c;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      letter-spacing: .18em;
+      font-weight: 700;
+    }
+
+    .badge,
+    .pill {
+      border: 1px solid #2f2f31;
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: .83rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) minmax(280px, 360px);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .game-panel,
+    .side-panel {
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .game-panel { padding: 18px; }
+    .side-panel { padding: 18px; display: grid; gap: 16px; }
+
+    .player-switcher {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .player-btn {
+      border: 1px solid #303033;
+      background: #222326;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .player-btn.active {
+      background: #fff;
+      color: #121213;
+      border-color: #fff;
+    }
+
+    .subline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: .95rem;
+      margin-bottom: 18px;
+    }
+
+    .board-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .board {
+      display: grid;
+      gap: 6px;
+    }
+
+    .board-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(52px, 62px));
+      gap: 6px;
+    }
+
+    .tile {
+      width: min(12vw, 62px);
+      height: min(12vw, 62px);
+      max-width: 62px;
+      max-height: 62px;
+      min-width: 52px;
+      min-height: 52px;
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      text-transform: uppercase;
+      user-select: none;
+      background: var(--tile-empty);
+      transition: transform .12s ease, border-color .12s ease, background-color .12s ease;
+    }
+
+    .tile.filled { border-color: var(--border-active); }
+    .tile.correct { background: var(--correct); border-color: var(--correct); }
+    .tile.present { background: var(--present); border-color: var(--present); }
+    .tile.absent { background: var(--absent); border-color: var(--absent); }
+    .tile.pop { transform: scale(1.06); }
+
+    .message {
+      min-height: 24px;
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .message.error { color: #fda4af; }
+    .message.success { color: #bbf7d0; }
+    .message.info { color: #e5e7eb; }
+
+    .keyboard {
+      display: grid;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .key-row {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .key {
+      border: 0;
+      border-radius: 8px;
+      background: var(--key);
+      color: var(--key-text);
+      font-weight: 700;
+      min-width: 42px;
+      height: 58px;
+      padding: 0 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+    }
+
+    .key.wide { min-width: 64px; font-size: 0.78rem; }
+    .key.correct { background: var(--correct); }
+    .key.present { background: var(--present); }
+    .key.absent { background: var(--absent); }
+
+    .card {
+      border: 1px solid rgba(255,255,255,.07);
+      background: rgba(255,255,255,.02);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .card h2,
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      letter-spacing: .02em;
+    }
+
+    .score-list { display: grid; gap: 10px; }
+
+    .score-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 12px;
+      background: rgba(255,255,255,.03);
+    }
+
+    .score-row strong { display: block; margin-bottom: 3px; }
+    .score-row span { color: var(--muted); font-size: .92rem; }
+    .trophy { font-size: 1.2rem; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .stat-box {
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.06);
+    }
+
+    .stat-box small { color: var(--muted); display: block; margin-bottom: 6px; }
+    .stat-box strong { font-size: 1.2rem; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .action-btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 14px;
+      cursor: pointer;
+      font-weight: 700;
+      background: #e5e7eb;
+      color: #111827;
+      flex: 1 1 140px;
+    }
+
+    .action-btn.secondary { background: #27272a; color: #fff; border: 1px solid rgba(255,255,255,.08); }
+    .action-btn.danger { background: #3f1010; color: #fecaca; border: 1px solid rgba(248,113,113,.25); }
+
+    textarea {
+      width: 100%;
+      min-height: 94px;
+      background: #111214;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 12px;
+      padding: 12px;
+      resize: vertical;
+      font: inherit;
+    }
+
+    .helper {
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.45;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: .84rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; }
+      .side-panel { order: 2; }
+      .game-panel { order: 1; }
+    }
+
+    @media (max-width: 540px) {
+      .app { padding-inline: 10px; }
+      .game-panel, .side-panel { padding: 14px; border-radius: 16px; }
+      .tile {
+        min-width: 44px;
+        min-height: 44px;
+        width: min(15vw, 54px);
+        height: min(15vw, 54px);
+        font-size: 1.45rem;
+      }
+      .key { min-width: 30px; height: 50px; padding: 0 8px; font-size: .82rem; }
+      .key.wide { min-width: 54px; }
+    }
+  </style>
 </head>
 <body>
-<h1>WORDLE (v2)</h1>
-<div id="game"></div>
-<input type="text" id="guessInput" maxlength="5" placeholder="Enter guess..." autocomplete="off" autofocus />
-<button id="submitGuess">Guess</button>
-<div id="message"></div>
-<div id="social-status"></div>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <h1>WORDLE</h1>
+        <span class="badge">v3</span>
+        <span class="badge" id="puzzleBadge">Daily puzzle</span>
+      </div>
+      <div class="pill">Classic-style daily game for Rahul + Ayesha</div>
+    </div>
 
-<script>
-// Word list - this can be expanded or linked to a word list API for real gameplay
-const words = ["about","other","which","their","there","these","would","could","write","right","plant","plane","crane","brave","share","light","world","ghost","storm","water","train"];
-const target = localStorage.getItem('wordleTarget') || words[Math.floor(Math.random() * words.length)];
-localStorage.setItem('wordleTarget', target);
+    <div class="layout">
+      <section class="game-panel">
+        <div class="player-switcher" id="playerSwitcher"></div>
+        <div class="subline">
+          <span id="currentPlayerLabel"></span>
+          <span>•</span>
+          <span id="dateLabel"></span>
+          <span>•</span>
+          <span id="attemptLabel"></span>
+        </div>
 
-const maxGuesses = 6;
-let currentRow = 0;
-const guesses = [];
-const gameDiv = document.getElementById('game');
-const guessInput = document.getElementById('guessInput');
-const submitGuess = document.getElementById('submitGuess');
-const messageDiv = document.getElementById('message');
-const socialStatusDiv = document.getElementById('social-status');
+        <div class="board-wrap">
+          <div class="board" id="board"></div>
+        </div>
 
-// Assume players: Rahul and Ayesha
-// Store attempts using localStorage, keys storing who guessed
-const players = ['Rahul', 'Ayesha'];
+        <div class="message info" id="message">Pick a player and start guessing.</div>
 
-function initGrid() {
-  for(let i = 0; i < maxGuesses; i++) {
-    const row = document.createElement('div');
-    row.className = 'row';
-    for(let j = 0; j < 5; j++) {
-      const tile = document.createElement('div');
-      tile.className = 'tile';
-      row.appendChild(tile);
+        <div class="keyboard" id="keyboard"></div>
+      </section>
+
+      <aside class="side-panel">
+        <div class="card">
+          <h2>Today's scoreboard</h2>
+          <div class="score-list" id="scoreList"></div>
+        </div>
+
+        <div class="card">
+          <h3>Lifetime stats</h3>
+          <div class="stats-grid" id="statsGrid"></div>
+        </div>
+
+        <div class="card">
+          <h3>Share / compare</h3>
+          <div class="actions">
+            <button class="action-btn" id="copyResultBtn">Copy my result</button>
+            <button class="action-btn secondary" id="importBtn">Import partner result</button>
+          </div>
+          <div style="height:10px"></div>
+          <textarea id="importBox" placeholder="Paste the other person's result code or message here..."></textarea>
+          <p class="helper">Tip: after one of you plays, tap <strong>Copy my result</strong> and send it on WhatsApp. The other person can paste it here to sync the scoreboard on their phone.</p>
+        </div>
+
+        <div class="card">
+          <h3>Reset</h3>
+          <div class="actions">
+            <button class="action-btn danger" id="resetPlayerBtn">Reset current player</button>
+          </div>
+          <p class="footer-note">This clears only the selected player's progress for today's puzzle on this device.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const PLAYERS = ["Rahul", "Ayesha"];
+    const ANSWERS = [
+      "cigar","rebut","sissy","humph","awake","blush","focal","evade","naval","serve",
+      "heath","dwarf","model","karma","stink","grade","quiet","bench","abate","feign",
+      "major","death","fresh","crust","stool","colon","abase","marry","react","batty",
+      "pride","floss","helix","croak","staff","paper","unfed","whelp","trawl","outdo",
+      "adobe","crazy","sower","repay","digit","crate","cluck","spike","mimic","pound",
+      "maxim","linen","unmet","flesh","booby","forth","first","stand","belly","ivory",
+      "seedy","print","yearn","drain","bribe","stout","panel","crass","flume","offal",
+      "agree","error","swirl","argue","bleed","delta","flick","totem","wooer","front",
+      "shrub","parry","biome","lapel","start","greet","goner","golem","lusty","loopy",
+      "round","audit","lying","gamma","labor","islet","civic","forge","corny","moult"
+    ];
+
+    const EXTRA_GUESSES = [
+      "about","above","abuse","actor","acute","admit","adopt","adult","after","again",
+      "agent","agile","aging","aisle","alarm","album","alert","alike","alive","allow",
+      "alone","along","alter","amber","amend","angel","anger","angle","angry","ankle",
+      "apple","apply","arena","argue","arise","array","aside","asset","audio","avoid",
+      "award","aware","badly","baker","bases","basic","beach","began","begin","begun",
+      "being","below","birth","black","blame","blind","block","blood","board","boost",
+      "booth","bound","brain","brand","brave","bread","break","brick","brief","bring",
+      "broad","broke","brown","build","built","buyer","cable","carry","catch","cause",
+      "chain","chair","chaos","charm","chart","chase","cheap","check","chest","chief",
+      "child","china","chose","civil","claim","class","clean","clear","clerk","click",
+      "clock","close","coach","coast","could","count","court","cover","craft","crane",
+      "crash","cream","crime","cross","crowd","crown","curve","cycle","daily","dance",
+      "dated","dealt","death","debut","delay","depth","doing","doubt","dozen","draft",
+      "drama","dream","dress","drink","drive","drove","dying","eager","early","earth",
+      "eight","elite","empty","enemy","enjoy","enter","entry","equal","error","event",
+      "every","exact","exist","extra","faith","false","fault","fiber","field","fifth",
+      "fifty","fight","final","first","fixed","flash","fleet","floor","focus","force",
+      "forth","forty","forum","found","frame","frank","fraud","fresh","front","fruit",
+      "fully","funny","giant","given","glass","globe","going","grace","grade","grand",
+      "grant","grass","great","green","gross","group","grown","guard","guess","guest",
+      "guide","happy","harsh","heart","heavy","hence","honor","horse","hotel","house",
+      "human","ideal","image","index","inner","input","issue","japan","joint","judge",
+      "known","label","large","laser","later","laugh","layer","learn","least","leave",
+      "legal","level","light","limit","local","logic","loose","lower","lucky","lunch",
+      "major","maker","march","match","maybe","mayor","metal","might","minor","model",
+      "money","month","moral","motor","mount","mouse","mouth","movie","music","needs",
+      "never","newly","night","noise","north","novel","nurse","occur","ocean","offer",
+      "often","order","other","ought","paint","panel","paper","party","peace","phase",
+      "phone","piano","piece","pilot","pitch","place","plain","plane","plant","plate",
+      "point","pound","power","press","price","pride","prime","print","prior","prize",
+      "proof","proud","queen","quick","quiet","quite","radio","raise","range","rapid",
+      "ratio","reach","react","ready","refer","right","rival","river","robot","rough",
+      "round","route","royal","rural","scale","scene","scope","score","sense","serve",
+      "seven","shall","shape","share","sharp","sheet","shelf","shell","shift","shine",
+      "shirt","shock","shoot","short","shown","sight","since","skill","sleep","slide",
+      "small","smart","smile","smoke","solid","solve","sorry","sound","south","space",
+      "spare","speak","speed","spend","spoke","sport","staff","stage","stake","stand",
+      "start","state","steam","steel","stick","still","stock","stone","store","storm",
+      "story","strip","stuck","study","stuff","style","sugar","suite","super","sweet",
+      "table","taken","taste","teach","teeth","terry","thank","their","theme","there",
+      "these","thick","thing","think","third","those","three","throw","tight","times",
+      "tired","title","today","topic","total","touch","tough","tower","track","trade",
+      "train","treat","trend","trial","trust","truth","twice","under","union","unity",
+      "until","upper","upset","urban","usage","usual","vague","valid","value","video",
+      "visit","vital","voice","waste","watch","water","wheel","where","which","while",
+      "white","whole","whose","woman","women","world","worry","worth","would","write",
+      "wrong","young","youth"
+    ];
+
+    const VALID_GUESSES = Array.from(new Set([...ANSWERS, ...EXTRA_GUESSES]));
+    const MAX_GUESSES = 6;
+    const WORD_LENGTH = 5;
+    const STORAGE_KEY = "wordleTogetherV3";
+    const DAY_ZERO_UTC = Date.UTC(2024, 0, 1);
+    const keyboardRows = [
+      ["Q","W","E","R","T","Y","U","I","O","P"],
+      ["A","S","D","F","G","H","J","K","L"],
+      ["ENTER","Z","X","C","V","B","N","M","⌫"]
+    ];
+    const statusRank = { absent: 1, present: 2, correct: 3 };
+
+    const boardEl = document.getElementById("board");
+    const keyboardEl = document.getElementById("keyboard");
+    const scoreListEl = document.getElementById("scoreList");
+    const statsGridEl = document.getElementById("statsGrid");
+    const playerSwitcherEl = document.getElementById("playerSwitcher");
+    const currentPlayerLabelEl = document.getElementById("currentPlayerLabel");
+    const dateLabelEl = document.getElementById("dateLabel");
+    const attemptLabelEl = document.getElementById("attemptLabel");
+    const messageEl = document.getElementById("message");
+    const copyResultBtn = document.getElementById("copyResultBtn");
+    const importBtn = document.getElementById("importBtn");
+    const importBox = document.getElementById("importBox");
+    const resetPlayerBtn = document.getElementById("resetPlayerBtn");
+    const puzzleBadgeEl = document.getElementById("puzzleBadge");
+
+    const today = new Date();
+    const dayKey = today.toISOString().slice(0, 10);
+    const dayNumber = Math.floor((Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) - DAY_ZERO_UTC) / 86400000);
+    const answer = ANSWERS[((dayNumber % ANSWERS.length) + ANSWERS.length) % ANSWERS.length];
+    const formattedDate = today.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+
+    puzzleBadgeEl.textContent = `Puzzle #${dayNumber}`;
+    dateLabelEl.textContent = formattedDate;
+
+    let selectedPlayer = PLAYERS[0];
+    let currentGuess = "";
+
+    function freshPlayerDayState() {
+      return {
+        guesses: [],
+        completed: false,
+        won: false,
+        imported: false,
+        updatedAt: null,
+        resultText: ""
+      };
     }
-    gameDiv.appendChild(row);
-  }
-}
 
-function checkGuess(guess) {
-  guess = guess.toLowerCase();
-  const targetArr = target.split('');
-  const guessArr = guess.split('');
-  const result = new Array(5).fill('absent');
-
-  // First pass - correct letters
-  for(let i=0; i<5; i++) {
-    if(guessArr[i] === targetArr[i]) {
-      result[i] = 'correct';
-      targetArr[i] = null;
+    function freshStats() {
+      return { played: 0, wins: 0, currentStreak: 0, bestStreak: 0, totalAttemptsOnWins: 0 };
     }
-  }
-  // Second pass - present letters
-  for(let i=0; i<5; i++) {
-    if(result[i] === 'absent' && targetArr.includes(guessArr[i])) {
-      result[i] = 'present';
-      targetArr[targetArr.indexOf(guessArr[i])] = null;
+
+    function loadState() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        if (!parsed.days) parsed.days = {};
+        if (!parsed.stats) parsed.stats = {};
+        PLAYERS.forEach((player) => {
+          if (!parsed.stats[player]) parsed.stats[player] = freshStats();
+        });
+        if (!parsed.days[dayKey]) parsed.days[dayKey] = { players: {} };
+        PLAYERS.forEach((player) => {
+          if (!parsed.days[dayKey].players[player]) parsed.days[dayKey].players[player] = freshPlayerDayState();
+        });
+        return parsed;
+      } catch {
+        return {
+          days: {
+            [dayKey]: { players: Object.fromEntries(PLAYERS.map((player) => [player, freshPlayerDayState()])) }
+          },
+          stats: Object.fromEntries(PLAYERS.map((player) => [player, freshStats()]))
+        };
+      }
     }
-  }
-  return result;
-}
 
-function setRow(rowNum, guess, result) {
-  const row = gameDiv.children[rowNum];
-  for(let i=0; i<5; i++) {
-    const tile = row.children[i];
-    tile.textContent = guess[i].toUpperCase();
-    tile.className = 'tile ' + result[i];
-  }
-}
+    let appState = loadState();
 
-function endGame(win) {
-  guessInput.disabled = true;
-  submitGuess.disabled = true;
-  if(win) {
-    messageDiv.textContent = `Congratulations! You guessed the word: ${target.toUpperCase()}`;
-  } else {
-    messageDiv.textContent = `Game over! The word was: ${target.toUpperCase()}`;
-  }
-}
-
-function updateSocialStatus() {
-  const status = players.map(player => {
-    const key = 'wordleAttempt_' + player.toLowerCase();
-    const attempt = localStorage.getItem(key);
-    if(attempt) {
-      return `${player} has already attempted.`;
-    } else {
-      return `${player} has not attempted yet.`;
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
     }
-  }).join(' ');
-  socialStatusDiv.textContent = status;
-}
 
-submitGuess.addEventListener('click', () => {
-  const guess = guessInput.value.trim().toLowerCase();
-  if(guess.length !== 5) {
-    alert('Please enter exactly 5 letters.');
-    return;
-  }
-  if(!words.includes(guess)) {
-    alert('Not a valid word.');
-    return;
-  }
-  if(currentRow >= maxGuesses) return;
+    function getPlayerState(player = selectedPlayer) {
+      return appState.days[dayKey].players[player];
+    }
 
-  const result = checkGuess(guess);
-  setRow(currentRow, guess, result);
-  guesses.push(guess);
-  currentRow++;
+    function getStats(player) {
+      return appState.stats[player];
+    }
 
-  // Record attempt for current player (rotate)
-  const currentPlayer = players[currentRow % players.length];
-  localStorage.setItem('wordleAttempt_' + currentPlayer.toLowerCase(), guess);
+    function wasRecordedToday(player) {
+      return getPlayerState(player).completed || getPlayerState(player).guesses.length > 0;
+    }
 
-  if(guess === target) {
-    endGame(true);
-  } else if(currentRow >= maxGuesses) {
-    endGame(false);
-  }
-  guessInput.value = '';
-  guessInput.focus();
+    function buildPlayerSwitcher() {
+      playerSwitcherEl.innerHTML = "";
+      PLAYERS.forEach((player) => {
+        const button = document.createElement("button");
+        button.className = `player-btn${player === selectedPlayer ? " active" : ""}`;
+        button.textContent = player;
+        button.addEventListener("click", () => {
+          selectedPlayer = player;
+          currentGuess = "";
+          render();
+        });
+        playerSwitcherEl.appendChild(button);
+      });
+    }
 
-  updateSocialStatus();
-});
+    function buildBoard() {
+      boardEl.innerHTML = "";
+      for (let row = 0; row < MAX_GUESSES; row++) {
+        const rowEl = document.createElement("div");
+        rowEl.className = "board-row";
+        for (let col = 0; col < WORD_LENGTH; col++) {
+          const tile = document.createElement("div");
+          tile.className = "tile";
+          tile.dataset.row = row;
+          tile.dataset.col = col;
+          rowEl.appendChild(tile);
+        }
+        boardEl.appendChild(rowEl);
+      }
+    }
 
-guessInput.addEventListener('keyup', (e) => {
-  if(e.key === 'Enter') {
-    submitGuess.click();
-  }
-});
+    function buildKeyboard() {
+      keyboardEl.innerHTML = "";
+      keyboardRows.forEach((row) => {
+        const rowEl = document.createElement("div");
+        rowEl.className = "key-row";
+        row.forEach((key) => {
+          const btn = document.createElement("button");
+          btn.className = `key${key.length > 1 ? " wide" : ""}`;
+          btn.textContent = key;
+          btn.dataset.key = key;
+          btn.addEventListener("click", () => handleKey(key));
+          rowEl.appendChild(btn);
+        });
+        keyboardEl.appendChild(rowEl);
+      });
+    }
 
-// Initialize
-initGrid();
-updateSocialStatus();
-</script>
+    function getTileStatusMap(playerState) {
+      const letterMap = {};
+      playerState.guesses.forEach((guess) => {
+        const statuses = scoreGuess(guess, answer);
+        guess.split("").forEach((letter, index) => {
+          const nextStatus = statuses[index];
+          if (!letterMap[letter] || statusRank[nextStatus] > statusRank[letterMap[letter]]) {
+            letterMap[letter] = nextStatus;
+          }
+        });
+      });
+      return letterMap;
+    }
+
+    function scoreGuess(guess, target) {
+      const result = Array(WORD_LENGTH).fill("absent");
+      const targetLetters = target.split("");
+      const guessLetters = guess.split("");
+
+      for (let i = 0; i < WORD_LENGTH; i++) {
+        if (guessLetters[i] === targetLetters[i]) {
+          result[i] = "correct";
+          targetLetters[i] = null;
+        }
+      }
+
+      for (let i = 0; i < WORD_LENGTH; i++) {
+        if (result[i] !== "correct") {
+          const foundIndex = targetLetters.indexOf(guessLetters[i]);
+          if (foundIndex !== -1) {
+            result[i] = "present";
+            targetLetters[foundIndex] = null;
+          }
+        }
+      }
+
+      return result;
+    }
+
+    function renderBoard() {
+      buildBoard();
+      const playerState = getPlayerState();
+      playerState.guesses.forEach((guess, rowIndex) => {
+        const statuses = scoreGuess(guess, answer);
+        guess.split("").forEach((letter, colIndex) => {
+          const tile = boardEl.children[rowIndex].children[colIndex];
+          tile.textContent = letter.toUpperCase();
+          tile.className = `tile filled ${statuses[colIndex]}`;
+        });
+      });
+
+      if (!playerState.completed && playerState.guesses.length < MAX_GUESSES) {
+        const activeRow = boardEl.children[playerState.guesses.length];
+        currentGuess.split("").forEach((letter, idx) => {
+          const tile = activeRow.children[idx];
+          tile.textContent = letter;
+          tile.className = "tile filled pop";
+        });
+      }
+    }
+
+    function renderKeyboard() {
+      buildKeyboard();
+      const tileMap = getTileStatusMap(getPlayerState());
+      keyboardEl.querySelectorAll(".key").forEach((btn) => {
+        const raw = btn.dataset.key;
+        const letter = raw === "⌫" ? "BACKSPACE" : raw;
+        if (letter.length === 1 && tileMap[letter.toLowerCase()]) {
+          btn.classList.add(tileMap[letter.toLowerCase()]);
+        }
+      });
+    }
+
+    function describePlayerDay(player) {
+      const playerState = getPlayerState(player);
+      if (playerState.completed && playerState.won) {
+        return `Solved in ${playerState.guesses.length}/6`;
+      }
+      if (playerState.completed && !playerState.won) {
+        return "Missed it (X/6)";
+      }
+      if (playerState.guesses.length > 0) {
+        return `In progress • ${playerState.guesses.length}/6`;
+      }
+      return "Not started";
+    }
+
+    function computeWinner() {
+      const results = PLAYERS.map((player) => ({ player, state: getPlayerState(player) }));
+      const solved = results.filter(({ state }) => state.completed && state.won);
+      if (solved.length === 0) return null;
+      solved.sort((a, b) => a.state.guesses.length - b.state.guesses.length || new Date(a.state.updatedAt || 0) - new Date(b.state.updatedAt || 0));
+      if (solved.length > 1 && solved[0].state.guesses.length === solved[1].state.guesses.length) {
+        return "tie";
+      }
+      return solved[0].player;
+    }
+
+    function renderScoreboard() {
+      scoreListEl.innerHTML = "";
+      const winner = computeWinner();
+      PLAYERS.forEach((player) => {
+        const state = getPlayerState(player);
+        const row = document.createElement("div");
+        row.className = "score-row";
+        const label = state.imported ? "Imported" : wasRecordedToday(player) ? "On this device" : "Waiting";
+        const trophy = winner === player ? "👑" : winner === "tie" && state.completed && state.won ? "🤝" : "";
+        row.innerHTML = `
+          <div>
+            <strong>${player}</strong>
+            <span>${describePlayerDay(player)} • ${label}</span>
+          </div>
+          <div class="trophy">${trophy}</div>
+        `;
+        scoreListEl.appendChild(row);
+      });
+    }
+
+    function averageAttempts(stats) {
+      return stats.wins ? (stats.totalAttemptsOnWins / stats.wins).toFixed(1) : "-";
+    }
+
+    function renderStats() {
+      statsGridEl.innerHTML = "";
+      PLAYERS.forEach((player) => {
+        const stats = getStats(player);
+        const box = document.createElement("div");
+        box.className = "stat-box";
+        box.innerHTML = `
+          <small>${player}</small>
+          <strong>${stats.wins}/${stats.played}</strong>
+          <div class="helper">Wins / played • Avg ${averageAttempts(stats)} • Best streak ${stats.bestStreak}</div>
+        `;
+        statsGridEl.appendChild(box);
+      });
+    }
+
+    function setMessage(text, type = "info") {
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+    }
+
+    function updateHeaderText() {
+      const playerState = getPlayerState();
+      currentPlayerLabelEl.textContent = `${selectedPlayer}'s board`;
+      if (playerState.completed) {
+        attemptLabelEl.textContent = playerState.won ? `Finished in ${playerState.guesses.length}/6` : "Finished • X/6";
+      } else {
+        attemptLabelEl.textContent = `${playerState.guesses.length}/6 used`;
+      }
+    }
+
+    function render() {
+      buildPlayerSwitcher();
+      updateHeaderText();
+      renderBoard();
+      renderKeyboard();
+      renderScoreboard();
+      renderStats();
+
+      const playerState = getPlayerState();
+      if (playerState.completed && playerState.won) {
+        setMessage(`${selectedPlayer} already solved today's Wordle in ${playerState.guesses.length}/6.`, "success");
+      } else if (playerState.completed) {
+        setMessage(`${selectedPlayer} already finished today's Wordle.`, "info");
+      } else if (playerState.guesses.length > 0) {
+        setMessage(`${selectedPlayer} is mid-game. Keep going.`, "info");
+      } else {
+        setMessage(`It's ${selectedPlayer}'s turn. Guess the 5-letter word.`, "info");
+      }
+    }
+
+    function markStatsForCompletion(player, playerState) {
+      const stats = getStats(player);
+      if (playerState.statsRecorded) return;
+      stats.played += 1;
+      if (playerState.won) {
+        stats.wins += 1;
+        stats.currentStreak += 1;
+        stats.bestStreak = Math.max(stats.bestStreak, stats.currentStreak);
+        stats.totalAttemptsOnWins += playerState.guesses.length;
+      } else {
+        stats.currentStreak = 0;
+      }
+      playerState.statsRecorded = true;
+    }
+
+    function completeCurrentPlayer(won) {
+      const playerState = getPlayerState();
+      playerState.completed = true;
+      playerState.won = won;
+      playerState.updatedAt = new Date().toISOString();
+      playerState.imported = false;
+      playerState.resultText = buildShareText(selectedPlayer, false);
+      markStatsForCompletion(selectedPlayer, playerState);
+      saveState();
+      render();
+    }
+
+    function submitGuess() {
+      const playerState = getPlayerState();
+      if (playerState.completed) {
+        setMessage(`${selectedPlayer} has already finished today.`, "info");
+        return;
+      }
+      if (currentGuess.length !== WORD_LENGTH) {
+        setMessage("Need 5 letters.", "error");
+        return;
+      }
+      const guess = currentGuess.toLowerCase();
+      if (!VALID_GUESSES.includes(guess)) {
+        setMessage("Not in word list.", "error");
+        return;
+      }
+
+      playerState.guesses.push(guess);
+      playerState.updatedAt = new Date().toISOString();
+      currentGuess = "";
+
+      if (guess === answer) {
+        completeCurrentPlayer(true);
+        return;
+      }
+
+      if (playerState.guesses.length >= MAX_GUESSES) {
+        completeCurrentPlayer(false);
+        setMessage(`Unlucky — the word was ${answer.toUpperCase()}.`, "error");
+        render();
+        return;
+      }
+
+      saveState();
+      render();
+    }
+
+    function handleKey(key) {
+      const playerState = getPlayerState();
+      if (playerState.completed) return;
+
+      if (key === "ENTER") {
+        submitGuess();
+        return;
+      }
+
+      if (key === "⌫" || key === "BACKSPACE") {
+        currentGuess = currentGuess.slice(0, -1);
+        renderBoard();
+        return;
+      }
+
+      if (/^[A-Z]$/.test(key) && currentGuess.length < WORD_LENGTH) {
+        currentGuess += key;
+        renderBoard();
+      }
+    }
+
+    function emojiForGuess(guess) {
+      return scoreGuess(guess, answer).map((status) => {
+        if (status === "correct") return "🟩";
+        if (status === "present") return "🟨";
+        return "⬛";
+      }).join("");
+    }
+
+    function buildSharePayload(player) {
+      const state = getPlayerState(player);
+      return {
+        version: 3,
+        dayKey,
+        puzzle: dayNumber,
+        player,
+        guesses: state.guesses,
+        completed: state.completed,
+        won: state.won,
+        updatedAt: state.updatedAt,
+        source: "Wordle Together"
+      };
+    }
+
+    function encodePayload(payload) {
+      return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    }
+
+    function decodePayload(text) {
+      const trimmed = text.trim();
+      const directCode = trimmed.includes("SYNC:") ? trimmed.split("SYNC:").pop().trim() : trimmed;
+      return JSON.parse(decodeURIComponent(escape(atob(directCode))));
+    }
+
+    function buildShareText(player, includeSync = true) {
+      const state = getPlayerState(player);
+      const score = state.won ? state.guesses.length : "X";
+      const lines = [
+        `${player} • Wordle Together #${dayNumber} ${score}/6`,
+        ...state.guesses.map(emojiForGuess)
+      ];
+      if (includeSync) {
+        lines.push(`SYNC:${encodePayload(buildSharePayload(player))}`);
+      }
+      return lines.join("\n");
+    }
+
+    async function copyResult() {
+      const state = getPlayerState();
+      if (!state.completed) {
+        setMessage("Finish the game first, then copy your result.", "error");
+        return;
+      }
+      const text = buildShareText(selectedPlayer, true);
+      state.resultText = text;
+      saveState();
+      try {
+        await navigator.clipboard.writeText(text);
+        setMessage("Result copied. Send it to the other person on WhatsApp.", "success");
+      } catch {
+        importBox.value = text;
+        importBox.select();
+        setMessage("Clipboard was blocked, so I put the result in the box below for easy copy.", "info");
+      }
+    }
+
+    function importResult() {
+      const raw = importBox.value.trim();
+      if (!raw) {
+        setMessage("Paste a result first.", "error");
+        return;
+      }
+
+      try {
+        const payload = decodePayload(raw);
+        if (payload.dayKey !== dayKey) {
+          setMessage("That result is for a different day.", "error");
+          return;
+        }
+        if (!PLAYERS.includes(payload.player)) {
+          setMessage("Unknown player in result.", "error");
+          return;
+        }
+
+        const targetState = getPlayerState(payload.player);
+        targetState.guesses = Array.isArray(payload.guesses) ? payload.guesses.slice(0, MAX_GUESSES) : [];
+        targetState.completed = !!payload.completed;
+        targetState.won = !!payload.won;
+        targetState.imported = true;
+        targetState.updatedAt = payload.updatedAt || new Date().toISOString();
+        targetState.resultText = raw;
+
+        if (targetState.completed) {
+          markStatsForCompletion(payload.player, targetState);
+        }
+
+        saveState();
+        render();
+        setMessage(`${payload.player}'s result imported. Scoreboard updated.`, "success");
+      } catch {
+        setMessage("Couldn't read that result code. Paste the full message including the SYNC line.", "error");
+      }
+    }
+
+    function resetCurrentPlayer() {
+      const stats = getStats(selectedPlayer);
+      const playerState = getPlayerState();
+
+      if (playerState.statsRecorded) {
+        stats.played = Math.max(0, stats.played - 1);
+        if (playerState.won) {
+          stats.wins = Math.max(0, stats.wins - 1);
+          stats.totalAttemptsOnWins = Math.max(0, stats.totalAttemptsOnWins - playerState.guesses.length);
+        }
+        stats.currentStreak = 0;
+      }
+
+      appState.days[dayKey].players[selectedPlayer] = freshPlayerDayState();
+      currentGuess = "";
+      saveState();
+      render();
+      setMessage(`${selectedPlayer}'s board has been reset for today.`, "info");
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const activeTag = document.activeElement && document.activeElement.tagName;
+      if (activeTag === "TEXTAREA" && document.activeElement === importBox) return;
+
+      if (event.key === "Enter") {
+        handleKey("ENTER");
+      } else if (event.key === "Backspace") {
+        handleKey("BACKSPACE");
+      } else if (/^[a-zA-Z]$/.test(event.key)) {
+        handleKey(event.key.toUpperCase());
+      }
+    });
+
+    copyResultBtn.addEventListener("click", copyResult);
+    importBtn.addEventListener("click", importResult);
+    resetPlayerBtn.addEventListener("click", resetCurrentPlayer);
+
+    render();
+  </script>
 </body>
 </html>
